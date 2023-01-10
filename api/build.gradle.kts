@@ -15,6 +15,9 @@ dependencies {
 
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
+    implementation("io.jsonwebtoken:jjwt:0.9.1")
+    runtimeOnly("javax.xml.bind:jaxb-api:2.1")
+
     testImplementation("org.springframework.restdocs:spring-restdocs-webtestclient")
     testImplementation("io.kotest.extensions:kotest-extensions-spring:1.1.2")
 

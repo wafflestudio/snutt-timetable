@@ -1,3 +1,8 @@
+spring.profiles.active: test
+
+snutt:
+  secret-key: test-secret-key
+
 logging:
   level:
     de.flapdoodle: ERROR

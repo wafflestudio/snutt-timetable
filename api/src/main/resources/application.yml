@@ -2,8 +2,8 @@ spring:
   config:
     import: application-common.yml
 
-server:
-  port: 8080
+snutt:
+  secret-key:
 
 ---
 spring:

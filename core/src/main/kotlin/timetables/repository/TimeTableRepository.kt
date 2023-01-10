@@ -5,5 +5,5 @@ import kotlinx.coroutines.flow.Flow
 import org.springframework.data.repository.kotlin.CoroutineCrudRepository
 
 interface TimeTableRepository : CoroutineCrudRepository<TimeTable, String> {
-    fun getAllByUserId(userId: String): Flow<TimeTable>
+    fun findAllByUserId(userId: String): Flow<TimeTable>
 }

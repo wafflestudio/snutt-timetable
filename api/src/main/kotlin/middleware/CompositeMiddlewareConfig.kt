@@ -7,7 +7,14 @@ import org.springframework.context.annotation.Configuration
 class CompositeMiddlewareConfig {
     @Bean("snuttRestApiDefaultMiddleware")
     fun snuttRestApiDefaultMiddleware(
-        nativeClientInfoMiddleware: NativeClientInfoMiddleware,
+        apiKeyMiddleware: ApiKeyMiddleware,
         userAuthorizeMiddleware: UserAuthorizeMiddleware,
-    ): Middleware = userAuthorizeMiddleware + nativeClientInfoMiddleware
+        nativeClientInfoMiddleware: NativeClientInfoMiddleware,
+    ): Middleware = apiKeyMiddleware + userAuthorizeMiddleware + nativeClientInfoMiddleware
+
+    @Bean("snuttRestApiNoAuthMiddleware")
+    fun snuttRestApiNoAuthMiddleware(
+        apiKeyMiddleware: ApiKeyMiddleware,
+        nativeClientInfoMiddleware: NativeClientInfoMiddleware,
+    ): Middleware = apiKeyMiddleware + nativeClientInfoMiddleware
 }

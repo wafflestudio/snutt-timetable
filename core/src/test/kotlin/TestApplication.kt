@@ -62,14 +62,14 @@ class TruncateCollectionsTest(
                 repository.save(dummy)
 
                 Then("I got single data.") {
-                    val timeTables = repository.getAllByUserId(dummy.userId)
+                    val timeTables = repository.findAllByUserId(dummy.userId)
                         .toList()
 
                     timeTables.size shouldBe 1
                 }
 
                 Then("I still got single data.") {
-                    val timeTables = repository.getAllByUserId(dummy.userId)
+                    val timeTables = repository.findAllByUserId(dummy.userId)
                         .toList()
 
                     timeTables.size shouldBe 1

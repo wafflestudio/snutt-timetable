@@ -1,13 +1,23 @@
 package com.wafflestudio.snu4t.users.data
 
+import org.springframework.data.mongodb.core.mapping.Field
+
 data class Credential(
-    var appleEmail: String?,
-    var appleSub: String?,
-    var appleTransferSub: String?,
-    var fbId: String?,
-    var fbName: String?,
-    var localId: String?,
-    var localPw: String?,
-    var tempDate: String?,
-    var tempSeed: String?,
+    @Field(write = Field.Write.ALWAYS)
+    var localId: String? = null,
+    @Field(write = Field.Write.ALWAYS)
+    var localPw: String? = null,
+    @Field(write = Field.Write.ALWAYS)
+    var fbId: String? = null,
+    @Field(write = Field.Write.ALWAYS)
+    var fbName: String? = null,
+    @Field(write = Field.Write.ALWAYS)
+    var appleSub: String? = null,
+    @Field(write = Field.Write.ALWAYS)
+    var appleEmail: String? = null,
+    var appleTransferSub: String? = null,
+    @Field(write = Field.Write.ALWAYS)
+    var tempDate: String? = null,
+    @Field(write = Field.Write.ALWAYS)
+    var tempSeed: String? = null,
 )

@@ -14,9 +14,8 @@ interface TimeTableService {
 class TimeTableServiceImpl(
     private val timeTableRepository: TimeTableRepository,
 ) : TimeTableService {
-
     override suspend fun getBriefs(userId: String): List<TimeTableBriefDto> =
-        timeTableRepository.getAllByUserId(userId)
+        timeTableRepository.findAllByUserId(userId)
             .map(::TimeTableBriefDto)
             .toList()
 }

@@ -7,15 +7,15 @@ import java.time.LocalDateTime
 @Document("users")
 data class User(
     @Id
-    var id: String? = null,
-    var active: Boolean,
-    var credential: Credential,
+    val id: String? = null,
     var email: String?,
-    var isAdmin: Boolean,
-    var notificationCheckedAt: LocalDateTime,
-    var regDate: LocalDateTime,
-    var fcmKey: String?,
     var isEmailVerified: Boolean?,
-    var lastLoginTimestamp: Long,
+    var credential: Credential,
     var credentialHash: String,
+    var fcmKey: String?,
+    var active: Boolean = true,
+    var isAdmin: Boolean = false,
+    val regDate: LocalDateTime = LocalDateTime.now(),
+    var lastLoginTimestamp: Long = System.currentTimeMillis(),
+    var notificationCheckedAt: LocalDateTime = LocalDateTime.now(),
 )

@@ -1,6 +1,5 @@
 package com.wafflestudio.snu4t.handler
 
-import com.wafflestudio.snu4t.common.exception.AuthException
 import com.wafflestudio.snu4t.middleware.Middleware
 import com.wafflestudio.snu4t.timetables.service.TimeTableService
 import org.springframework.stereotype.Component
@@ -15,7 +14,7 @@ class TimeTableHandler(
     handlerMiddleware = snuttRestApiDefaultMiddleware
 ) {
     suspend fun getBriefs(req: ServerRequest): ServerResponse = handle(req) {
-        val userId = req.getContext().user?.id ?: throw AuthException
+        val userId = req.userId
 
         timeTableService.getBriefs(userId = userId)
     }

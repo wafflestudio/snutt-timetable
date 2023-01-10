@@ -3,7 +3,7 @@ spring:
     active: local
   data:
     mongodb:
-      uri: mongodb://snutt-mongo-dev.wafflestudio.com:27017/snutt
+      uri:
 logging:
   level:
     org:
@@ -12,6 +12,9 @@ logging:
           mongodb:
             core:
               MongoTemplate: DEBUG
+
+secret-names: dev/snutt-timetable
+
 ---
 spring:
   config:
