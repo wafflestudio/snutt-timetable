@@ -4,6 +4,7 @@ import com.wafflestudio.snu4t.handler.AdminHandler
 import com.wafflestudio.snu4t.handler.AuthHandler
 import com.wafflestudio.snu4t.handler.BookmarkHandler
 import com.wafflestudio.snu4t.handler.NotificationHandler
+import com.wafflestudio.snu4t.handler.SearchLectureHandler
 import com.wafflestudio.snu4t.handler.SharedTimetableHandler
 import com.wafflestudio.snu4t.handler.TimetableHandler
 import com.wafflestudio.snu4t.router.docs.AdminApi
@@ -22,6 +23,7 @@ import org.springframework.web.reactive.function.server.coRouter
 @Component
 class MainRouter(
     private val timeTableHandler: TimetableHandler,
+    private val searchLectureHandler: SearchLectureHandler,
     private val bookmarkHandler: BookmarkHandler,
     private val authHandler: AuthHandler,
     private val adminHandler: AdminHandler,
@@ -47,6 +49,13 @@ class MainRouter(
         "/tables".nest {
             GET("", timeTableHandler::getBriefs)
             GET("/{id}/links", timeTableHandler::getLink)
+        }
+    }
+
+    @Bean
+    fun searchLectureRoute() = v1CoRouter {
+        "/search_query".nest {
+            POST("", searchLectureHandler::searchLecture)
         }
     }
 
