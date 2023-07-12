@@ -92,7 +92,7 @@ class PushNotificationServiceImpl internal constructor(
     }
 
     override suspend fun sendNotifications(notifications: List<Notification>) {
-        notificationRepository.saveAll(notifications).collect()
+        notificationRepository.saveAll(notifications).toList()
     }
 
     override suspend fun sendPush(pushMessage: PushMessage, userId: String) {
