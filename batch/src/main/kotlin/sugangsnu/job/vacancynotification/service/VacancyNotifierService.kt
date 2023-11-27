@@ -111,7 +111,7 @@ class VacancyNotifierServiceImpl(
                         )
                         pushWithNotificationService.sendPushesAndNotifications(
                             pushMessage,
-                            NotificationType.NORMAL,
+                            NotificationType.LECTURE_VACANCY,
                             userIds
                         )
                     }
