@@ -27,7 +27,7 @@ class SugangSnuFetchServiceImpl(
         val englishSheet = HSSFWorkbook(englishLectureXlsx.asInputStream()).getSheetAt(0)
         val fullSheet = koreanSheet.zip(englishSheet).map { (koreanRow, englishRow) -> koreanRow + englishRow }
         val columnNameIndex = fullSheet[2].associate { it.stringCellValue to it.columnIndex }
-        return fullSheet.filterIndexed { index, _ -> index > 2 }.map { row ->
+        return fullSheet.drop(2).map { row ->
             convertSugangSnuRowToLecture(row, columnNameIndex, year, semester)
         }.also {
             koreanLectureXlsx.release()
