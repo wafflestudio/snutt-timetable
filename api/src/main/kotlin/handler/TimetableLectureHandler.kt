@@ -51,11 +51,13 @@ class TimetableLectureHandler(
         val userId = req.userId
         val timetableId = req.pathVariable("timetableId")
         val timetableLectureId = req.pathVariable("timetableLectureId")
+        val isForced = req.awaitBodyOrNull<ForcedReq>()?.isForced ?: false
 
         timetableLectureService.resetTimetableLecture(
             userId = userId,
             timetableId = timetableId,
             timetableLectureId = timetableLectureId,
+            isForced,
         ).let(::TimetableLegacyDto)
     }
 

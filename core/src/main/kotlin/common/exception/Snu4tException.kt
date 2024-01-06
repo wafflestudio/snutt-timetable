@@ -4,6 +4,8 @@ open class Snu4tException(
     val error: ErrorType = ErrorType.DEFAULT_ERROR,
     val errorMessage: String = error.errorMessage,
     val displayMessage: String = error.displayMessage,
+    // TODO: 구버전 대응용 ext 필드. 추후 삭제
+    val ext: Map<String, String> = mapOf(),
 ) : RuntimeException(errorMessage)
 
 object InvalidTimeException : Snu4tException(ErrorType.INVALID_TIME)
@@ -48,7 +50,11 @@ object InvalidRegistrationForPreviousSemesterCourseException :
 object DuplicateTimetableTitleException : Snu4tException(ErrorType.DUPLICATE_TIMETABLE_TITLE)
 object DuplicateTimetableLectureException : Snu4tException(ErrorType.DUPLICATE_LECTURE)
 object WrongSemesterException : Snu4tException(ErrorType.WRONG_SEMESTER)
-class LectureTimeOverlapException(confirmMessage: String) : Snu4tException(ErrorType.LECTURE_TIME_OVERLAP, confirmMessage, confirmMessage)
+class LectureTimeOverlapException(confirmMessage: String) : Snu4tException(
+    error = ErrorType.LECTURE_TIME_OVERLAP,
+    displayMessage = confirmMessage,
+    ext = mapOf("confirm_message" to confirmMessage)
+)
 object CustomLectureResetException : Snu4tException(ErrorType.CANNOT_RESET_CUSTOM_LECTURE)
 object TimetableNotFoundException : Snu4tException(ErrorType.TIMETABLE_NOT_FOUND)
 object PrimaryTimetableNotFoundException : Snu4tException(ErrorType.TIMETABLE_NOT_FOUND)

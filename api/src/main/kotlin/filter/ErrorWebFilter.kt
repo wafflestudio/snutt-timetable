@@ -58,7 +58,7 @@ class ErrorWebFilter(
     private fun makeErrorBody(
         exception: Snu4tException,
     ): ErrorBody {
-        return ErrorBody(exception.error.errorCode, exception.errorMessage, exception.displayMessage)
+        return ErrorBody(exception.error.errorCode, exception.errorMessage, exception.displayMessage, exception.ext)
     }
 }
 
@@ -66,5 +66,6 @@ private data class ErrorBody(
     val errcode: Long,
     val message: String,
     val displayMessage: String,
+    // TODO: 구버전 대응용 ext 필드. 추후 삭제
     val ext: Map<String, String> = mapOf(),
 )

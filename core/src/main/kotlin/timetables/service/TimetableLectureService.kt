@@ -25,7 +25,12 @@ interface TimetableLectureService {
         isForced: Boolean
     ): Timetable
 
-    suspend fun resetTimetableLecture(userId: String, timetableId: String, timetableLectureId: String): Timetable
+    suspend fun resetTimetableLecture(
+        userId: String,
+        timetableId: String,
+        timetableLectureId: String,
+        isForced: Boolean
+    ): Timetable
     suspend fun modifyTimetableLecture(
         userId: String,
         timetableId: String,
@@ -50,7 +55,9 @@ class TimetableLectureServiceImpl(
         }
         val colorIndex = ColorUtils.getLeastUsedColorIndexByRandom(timetable.lectures.map { it.colorIndex })
         if (timetable.lectures.any { it.lectureId == lectureId }) throw DuplicateTimetableLectureException
-        return addTimetableLecture(timetable, TimetableLecture(lecture, colorIndex), isForced)
+        val timetableLecture = TimetableLecture(lecture, colorIndex)
+        resolveTimeConflict(timetable, timetableLecture, isForced)
+        return timetableRepository.pushLecture(timetable.id!!, timetableLecture)
     }
 
     override suspend fun addCustomTimetableLecture(
@@ -61,10 +68,16 @@ class TimetableLectureServiceImpl(
     ): Timetable {
         val timetable = timetableRepository.findByUserIdAndId(userId, timetableId) ?: throw TimetableNotFoundException
         val timetableLecture = timetableLectureRequest.toTimetableLecture()
-        return addTimetableLecture(timetable, timetableLecture, isForced)
+        resolveTimeConflict(timetable, timetableLecture, isForced)
+        return timetableRepository.pushLecture(timetable.id!!, timetableLecture)
     }
 
-    override suspend fun resetTimetableLecture(userId: String, timetableId: String, timetableLectureId: String): Timetable {
+    override suspend fun resetTimetableLecture(
+        userId: String,
+        timetableId: String,
+        timetableLectureId: String,
+        isForced: Boolean
+    ): Timetable {
         val timetable = timetableRepository.findByUserIdAndId(userId, timetableId) ?: throw TimetableNotFoundException
         val timetableLecture = timetable.lectures.find { it.id == timetableLectureId } ?: throw LectureNotFoundException
         val originalLectureId = timetableLecture.lectureId ?: throw CustomLectureResetException
@@ -78,6 +91,7 @@ class TimetableLectureServiceImpl(
             remark = originalLecture.remark
             classPlaceAndTimes = originalLecture.classPlaceAndTimes
         }
+        resolveTimeConflict(timetable, timetableLecture, isForced)
         return timetableRepository.updateLecture(timetableId, timetableLecture)
     }
 
@@ -102,6 +116,7 @@ class TimetableLectureServiceImpl(
             colorIndex = modifyTimetableLectureRequestDto.colorIndex ?: colorIndex
             classPlaceAndTimes = modifyTimetableLectureRequestDto.classPlaceAndTimes?.map { it.toClassPlaceAndTime() } ?: classPlaceAndTimes
         }
+        resolveTimeConflict(timetable, timetableLecture, isForced)
         return timetableRepository.updateLecture(timetableId, timetableLecture)
     }
 
@@ -110,11 +125,11 @@ class TimetableLectureServiceImpl(
         return timetableRepository.pullLecture(timetableId, timetableLectureId)
     }
 
-    private suspend fun addTimetableLecture(
+    private suspend fun resolveTimeConflict(
         timetable: Timetable,
         timetableLecture: TimetableLecture,
         isForced: Boolean
-    ): Timetable {
+    ) {
         val overlappingLectures = timetable.lectures.filter {
             timetableLecture.id != it.id &&
                 ClassTimeUtils.timesOverlap(
@@ -131,13 +146,12 @@ class TimetableLectureServiceImpl(
                 timetableRepository.pullLectures(timetable.id!!, overlappingLectures.map { it.id })
             }
         }
-        return timetableRepository.pushLecture(timetable.id!!, timetableLecture)
     }
 
     private fun makeOverwritingConfirmMessage(overlappingLectures: List<TimetableLecture>): String {
         val overlappingLectureTitles =
             overlappingLectures.map { "'${it.courseTitle}'" }.take(2).joinToString(", ")
         val shortFormOfTitles = if (overlappingLectures.size < 3) "" else "외 ${overlappingLectures.size - 2}개의 "
-        return "$overlappingLectureTitles ${shortFormOfTitles}강의가 중복되어 있습니다. 강의를 덮어쓰시겠습니까?"
+        return "$overlappingLectureTitles ${shortFormOfTitles}강의와 시간이 겹칩니다. 강의를 덮어쓰시겠습니까?"
     }
 }
