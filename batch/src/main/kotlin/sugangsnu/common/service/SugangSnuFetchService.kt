@@ -1,9 +1,14 @@
 package com.wafflestudio.snu4t.sugangsnu.common.service
 
 import com.wafflestudio.snu4t.common.enum.Semester
+import com.wafflestudio.snu4t.lecturebuildings.data.PlaceInfo
+import com.wafflestudio.snu4t.lecturebuildings.repository.LectureBuildingRepository
+import com.wafflestudio.snu4t.lectures.data.ClassPlaceAndTime
 import com.wafflestudio.snu4t.lectures.data.Lecture
 import com.wafflestudio.snu4t.sugangsnu.common.SugangSnuRepository
 import com.wafflestudio.snu4t.sugangsnu.common.utils.SugangSnuClassTimeUtils
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
 import org.apache.poi.ss.usermodel.Cell
 import org.slf4j.LoggerFactory
@@ -16,9 +21,12 @@ interface SugangSnuFetchService {
 @Service
 class SugangSnuFetchServiceImpl(
     private val sugangSnuRepository: SugangSnuRepository,
+    private val lectureBuildingRepository: LectureBuildingRepository,
 ) : SugangSnuFetchService {
     private val log = LoggerFactory.getLogger(javaClass)
     private val quotaRegex = """(?<quota>\d+)(\s*\((?<quotaForCurrentStudent>\d+)\))?""".toRegex()
+    private val buildingsMap =
+        runBlocking { lectureBuildingRepository.findAll().toList().associateBy { it.buildingNumber } }
 
     override suspend fun getSugangSnuLectures(year: Int, semester: Semester): List<Lecture> {
         val koreanLectureXlsx = sugangSnuRepository.getSugangSnuLectures(year, semester, "ko")
@@ -48,7 +56,7 @@ class SugangSnuFetchServiceImpl(
                 classPlaceAndTimes = SugangSnuClassTimeUtils.convertTextToClassTimeObject(
                     extraLectureInfo.ltTime,
                     extraLectureInfo.ltRoom.map { it.replace("(무선랜제공)", "") }
-                )
+                ).map { it.addBuildlingInfo() }
                 academicYear = extraLectureInfo.subInfo.academicCourse.takeIf { it != "학사" }
                     ?: extraLectureInfo.subInfo.academicYear?.let { "${it}학년" } ?: academicYear
                 courseTitle = extraCourseTitle ?: courseTitle
@@ -124,5 +132,9 @@ class SugangSnuFetchServiceImpl(
             classPlaceAndTimes = classTimes,
             registrationCount = registrationCount
         )
+    }
+
+    private suspend fun ClassPlaceAndTime.addBuildlingInfo(): ClassPlaceAndTime = this.apply {
+        this.lectureBuildings = PlaceInfo.getValuesOf(place).mapNotNull { buildingsMap[it.buildingNumber] }
     }
 }

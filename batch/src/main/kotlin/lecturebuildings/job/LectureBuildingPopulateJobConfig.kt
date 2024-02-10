@@ -7,6 +7,7 @@ import com.wafflestudio.snu4t.lectures.data.Lecture
 import com.wafflestudio.snu4t.lectures.repository.LectureRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
@@ -51,44 +52,44 @@ class LectureBuildingPopulateJobConfig(
     ): Step = StepBuilder(STEP_NAME, jobRepository).tasklet(
         { _, _ ->
             runBlocking {
-                lectureRepository.findAllByYearAndSemester(year, Semester.getOfValue(semester)!!).toList()
-                    .let { tryToUpdateLectureBuildings(it) }
-                    .let { updateResult ->
-                        updateTimetableLectures(updateResult.lecturesWithBuildingInfos)
-                    }
+                val lectures = lectureRepository.findAllByYearAndSemester(year, Semester.getOfValue(semester)!!).toList()
+                lectureBuildingPopulateService.fetchMissingBuildingInfo(lectures)
+                val updateResult = updateBuildingInfoOfLectures(lectures)
+                updateTimetableLectures(updateResult.lecturesWithBuildingInfos)
             }
             RepeatStatus.FINISHED
         },
         transactionManager
     ).build()
 
-    private suspend fun tryToUpdateLectureBuildings(lectures: List<Lecture>): LectureBuildingUpdateResult = runBlocking {
-        val updateResult = lectureBuildingPopulateService.populateLectureBuildingsWithFetch(lectures)
+    private suspend fun updateBuildingInfoOfLectures(lectures: List<Lecture>): LectureBuildingUpdateResult =
+        lectureBuildingPopulateService.updateBuildingInfoOfLectures(lectures).also { logUpdateResult(it) }
 
-        log.info(
-            "강의 ${updateResult.lecturesWithBuildingInfos.count()}개의 강의동 정보를 업데이트 했습니다.\n${
-            updateResult.lecturesWithBuildingInfos
-                .map { "${it.courseTitle}(${it.lectureNumber})" }
-                .joinToString(", ")
-            }"
-        )
-        log.info(
-            "강의동 업데이트에 실패한 강의:\n ${
-            updateResult.lecturesFailed
-                .map { "${it.courseTitle}(${it.lectureNumber}): ${it.classPlaceAndTimes.map { it.place }.joinToString(", ")}" }
-                .joinToString("\n")
-            }"
-        )
-
-        return@runBlocking updateResult
-    }
-
-    private suspend fun updateTimetableLectures(lectures: List<Lecture>) = runBlocking {
+    private suspend fun updateTimetableLectures(lectures: List<Lecture>) = coroutineScope {
         lectures.map {
             async {
                 val timetables = lectureBuildingPopulateService.populateLectureBuildingsOfTimetables(it)
                 log.info("강의 ${it.courseTitle}(${it.courseNumber})}가 포함된 시간표 ${timetables.count()}개를 업데이트 했습니다.")
             }
-        }
-    }.awaitAll()
+        }.awaitAll()
+    }
+
+    private fun logUpdateResult(updateResult: LectureBuildingUpdateResult) {
+        log.info(
+            """
+                강의 ${updateResult.lecturesWithBuildingInfos.count()}개의 강의동 정보를 업데이트 했습니다.
+                ${updateResult.lecturesWithBuildingInfos.joinToString(", ") { "${it.courseTitle}(${it.lectureNumber})" }}
+            """.trimIndent()
+        )
+        log.info(
+            """
+                강의동 업데이트에 실패한 강의:
+                ${
+                updateResult.lecturesFailed.joinToString("\n") { lecture ->
+                    "${lecture.courseTitle}(${lecture.lectureNumber}): ${lecture.classPlaceAndTimes.joinToString(", ") { it.place }}"
+                }
+            }
+            """.trimIndent()
+        )
+    }
 }

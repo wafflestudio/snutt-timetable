@@ -50,18 +50,16 @@ class SugangSnuSyncServiceImpl(
     private val coursebookRepository: CoursebookRepository,
     private val bookmarkRepository: BookmarkRepository,
     private val tagListRepository: TagListRepository,
-    private val lectureBuildingRepository: LectureBuildingRepository,
     private val cache: Cache,
 ) : SugangSnuSyncService {
     override suspend fun updateCoursebook(coursebook: Coursebook): List<UserLectureSyncResult> {
         val newLectures = sugangSnuFetchService.getSugangSnuLectures(coursebook.year, coursebook.semester)
         val oldLectures =
             lectureService.getLecturesByYearAndSemesterAsFlow(coursebook.year, coursebook.semester).toList()
-        var compareResult = compareLectures(newLectures, oldLectures)
-        val compareResultWithBuildingInfo = addBuildingInfos(compareResult)
+        val compareResult = compareLectures(newLectures, oldLectures)
 
-        syncLectures(compareResultWithBuildingInfo)
-        val syncUserLecturesResults = syncSavedUserLectures(compareResultWithBuildingInfo)
+        syncLectures(compareResult)
+        val syncUserLecturesResults = syncSavedUserLectures(compareResult)
         syncTagList(coursebook, newLectures)
         coursebookRepository.save(coursebook.apply { updatedAt = Instant.now() })
 
@@ -147,47 +145,6 @@ class SugangSnuSyncServiceImpl(
         lectureService.upsertLectures(compareResult.createdLectureList)
         lectureService.upsertLectures(updatedLectures)
         lectureService.deleteLectures(compareResult.deletedLectureList)
-    }
-
-    private suspend fun addBuildingInfos(compareResult: SugangSnuLectureCompareResult): SugangSnuLectureCompareResult {
-        val createdLectureListWithBuildingInfo = populateLecturesWithBuildingInfo(compareResult.createdLectureList)
-
-        val updatedLectures = compareResult.updatedLectureList.map { it.newData }
-        val updatedLecturesWithBuildingInfo = populateLecturesWithBuildingInfo(updatedLectures)
-            .associateBy { it.id }
-        val updatedLectureList = compareResult.updatedLectureList.map {
-            it.apply {
-                this.newData = this.newData.id?.let { updatedLecturesWithBuildingInfo[it] } ?: this.newData
-            }
-        }
-
-        return SugangSnuLectureCompareResult(
-            createdLectureList = createdLectureListWithBuildingInfo,
-            deletedLectureList = compareResult.deletedLectureList,
-            updatedLectureList = updatedLectureList
-        )
-    }
-
-    // 미리 저장해둔 빌딩 정보로 강의에 lectureBuilding 정보 추가
-    private suspend fun populateLecturesWithBuildingInfo(lectures: List<Lecture>): List<Lecture> {
-        val buildingNumbers = lectures
-            .flatMap { it.classPlaceAndTimes }
-            .map { PlaceInfo(it.place)?.buildingNumber }
-            .filterNotNull()
-
-        val buildingsMap = lectureBuildingRepository.findByBuildingNumberIsIn(buildingNumbers.toSet())
-            .associateBy { it.buildingNumber }
-
-        return lectures.map { lecture ->
-            lecture.apply {
-                this.classPlaceAndTimes = lecture.classPlaceAndTimes.map { classPlaceAndTime ->
-                    classPlaceAndTime.apply {
-                        this.lectureBuildings = PlaceInfo.getValuesOf(place)
-                            .mapNotNull { buildingsMap[it.buildingNumber] }
-                    }
-                }
-            }
-        }
     }
 
     private suspend fun syncSavedUserLectures(compareResult: SugangSnuLectureCompareResult): List<UserLectureSyncResult> =
