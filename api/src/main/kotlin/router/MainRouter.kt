@@ -9,6 +9,7 @@ import com.wafflestudio.snu4t.handler.FriendHandler
 import com.wafflestudio.snu4t.handler.FriendTableHandler
 import com.wafflestudio.snu4t.handler.LectureSearchHandler
 import com.wafflestudio.snu4t.handler.NotificationHandler
+import com.wafflestudio.snu4t.handler.PopupHandler
 import com.wafflestudio.snu4t.handler.TimetableHandler
 import com.wafflestudio.snu4t.handler.TimetableLectureHandler
 import com.wafflestudio.snu4t.handler.TimetableThemeHandler
@@ -21,6 +22,7 @@ import com.wafflestudio.snu4t.router.docs.ConfigDocs
 import com.wafflestudio.snu4t.router.docs.FriendDocs
 import com.wafflestudio.snu4t.router.docs.LectureSearchDocs
 import com.wafflestudio.snu4t.router.docs.NotificationDocs
+import com.wafflestudio.snu4t.router.docs.PopupDocs
 import com.wafflestudio.snu4t.router.docs.ThemeDocs
 import com.wafflestudio.snu4t.router.docs.TimetableDocs
 import com.wafflestudio.snu4t.router.docs.UserDocs
@@ -47,6 +49,7 @@ class MainRouter(
     private val friendHandler: FriendHandler,
     private val friendTableHandler: FriendTableHandler,
     private val configHandler: ConfigHandler,
+    private val popupHandler: PopupHandler,
     private val adminHandler: AdminHandler,
 ) {
     @Bean
@@ -139,6 +142,8 @@ class MainRouter(
             GET("/configs/{name}", adminHandler::getConfigs)
             DELETE("/configs/{name}/{id}", adminHandler::deleteConfig)
             PATCH("/configs/{name}/{id}", adminHandler::patchConfig)
+
+            POST("/popups", adminHandler::postPopup)
         }
     }
 
@@ -158,6 +163,14 @@ class MainRouter(
     fun configRoute() = v1CoRouter {
         "/configs".nest {
             GET("", configHandler::getConfigs)
+        }
+    }
+
+    @Bean
+    @PopupDocs
+    fun popupRoute() = v1CoRouter {
+        "/popups".nest {
+            GET("", popupHandler::getPopups)
         }
     }
 

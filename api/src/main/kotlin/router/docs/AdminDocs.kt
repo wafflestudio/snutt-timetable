@@ -4,6 +4,8 @@ import com.wafflestudio.snu4t.clientconfig.dto.ConfigResponse
 import com.wafflestudio.snu4t.clientconfig.dto.PatchConfigRequest
 import com.wafflestudio.snu4t.clientconfig.dto.PostConfigRequest
 import com.wafflestudio.snu4t.common.dto.OkResponse
+import com.wafflestudio.snu4t.popup.dto.PopupResponse
+import com.wafflestudio.snu4t.popup.dto.PostPopupRequest
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.enums.ParameterIn
@@ -74,6 +76,14 @@ import org.springframework.web.bind.annotation.RequestMethod
             ],
             responses = [ApiResponse(responseCode = "200", content = [Content(schema = Schema(implementation = ConfigResponse::class))])]
         ),
-    )
+    ),
+    RouterOperation(
+        path = "/v1/admin/popups", method = [RequestMethod.POST], produces = [MediaType.APPLICATION_JSON_VALUE],
+        operation = Operation(
+            operationId = "postPopup",
+            requestBody = RequestBody(content = [Content(schema = Schema(implementation = PostPopupRequest::class))], required = true),
+            responses = [ApiResponse(responseCode = "200", content = [Content(schema = Schema(implementation = PopupResponse::class))])]
+        ),
+    ),
 )
 annotation class AdminDocs

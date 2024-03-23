@@ -55,4 +55,8 @@ class AdminHandler(
         val config = configService.patchConfig(name, configId, body)
         ConfigResponse.from(config)
     }
+
+    suspend fun postPopup(req: ServerRequest) = handle(req) {
+        TODO()
+    }
 }
