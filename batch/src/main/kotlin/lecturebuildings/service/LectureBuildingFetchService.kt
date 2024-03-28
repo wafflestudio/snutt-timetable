@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service
 interface LectureBuildingFetchService {
     suspend fun getSnuMapLectureBuilding(campus: Campus, buildingNumber: String): LectureBuilding?
 }
+
 @Service
 class LectureBuildingFetchServiceImpl(
     private val snuMapRepository: SnuMapRepository,
