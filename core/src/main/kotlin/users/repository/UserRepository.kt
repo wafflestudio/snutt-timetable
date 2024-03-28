@@ -21,5 +21,7 @@ interface UserRepository : CoroutineCrudRepository<User, String> {
 
     suspend fun existsByEmailAndIsEmailVerifiedTrueAndActiveTrue(email: String): Boolean
 
+    suspend fun findAllByIsAdminTrue(): List<User>
+
     fun findAllByNicknameStartingWith(nickname: String): Flow<User>
 }

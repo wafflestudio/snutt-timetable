@@ -23,3 +23,8 @@ google:
 
 http:
   responseTimeout: 3s
+
+slack:
+  bot.token: ""
+  user.token: ""
+  signing-secret: ""

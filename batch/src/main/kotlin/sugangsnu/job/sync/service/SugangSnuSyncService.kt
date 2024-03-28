@@ -2,6 +2,15 @@ package com.wafflestudio.snu4t.sugangsnu.job.sync.service
 
 import com.wafflestudio.snu4t.bookmark.repository.BookmarkRepository
 import com.wafflestudio.snu4t.common.cache.Cache
+import com.wafflestudio.snu4t.common.cache.CacheKey
+import com.wafflestudio.snu4t.common.cache.get
+import com.wafflestudio.snu4t.common.slack.CONFIRM_DONE_EMOJI
+import com.wafflestudio.snu4t.common.slack.CONFIRM_ONGOING_EMOJI
+import com.wafflestudio.snu4t.common.slack.SlackMessageBlock
+import com.wafflestudio.snu4t.common.slack.SlackMessageRequest
+import com.wafflestudio.snu4t.common.slack.SlackMessageService
+import com.wafflestudio.snu4t.config.Phase
+import com.wafflestudio.snu4t.config.SNUTT_MENTION
 import com.wafflestudio.snu4t.coursebook.data.Coursebook
 import com.wafflestudio.snu4t.coursebook.repository.CoursebookRepository
 import com.wafflestudio.snu4t.lecturebuildings.data.PlaceInfo
@@ -52,7 +61,10 @@ class SugangSnuSyncServiceImpl(
     private val tagListRepository: TagListRepository,
     private val lectureBuildingRepository: LectureBuildingRepository,
     private val cache: Cache,
+    private val phase: Phase,
+    private val slackMessageService: SlackMessageService
 ) : SugangSnuSyncService {
+
     override suspend fun updateCoursebook(coursebook: Coursebook): List<UserLectureSyncResult> {
         val newLectures = sugangSnuFetchService.getSugangSnuLectures(coursebook.year, coursebook.semester)
         val oldLectures =
@@ -144,9 +156,66 @@ class SugangSnuSyncServiceImpl(
             diff.newData.apply { id = diff.oldData.id }
         }
 
-        lectureService.upsertLectures(compareResult.createdLectureList)
-        lectureService.upsertLectures(updatedLectures)
-        lectureService.deleteLectures(compareResult.deletedLectureList)
+        val ongoingConfirmThread = cache.get<String>(CacheKey.LOCK_LIVE_SUGANG_SNU_SYNC_UNTIL_CONFIRMED.build())
+        val hasOngoingConfirmProcessOnProd = phase.isProd && ongoingConfirmThread != null
+        val currentResultRequiresConfirm = phase.isProd && compareResult.needsConfirmOnProduction()
+
+        when {
+            currentResultRequiresConfirm -> {
+                // 이전 검토 요청 존재 여부와 별개로 새로운 검토 요청
+                val newThreadTs = slackMessageService.postMessage(
+                    message =
+                    SlackMessageRequest(
+                        SlackMessageBlock.Section("*$SNUTT_MENTION 수강스누 업데이트 검토가 필요합니다.*"),
+                        SlackMessageBlock.Section("추가된 강좌 수: ${compareResult.createdLectureList.size}"),
+                        SlackMessageBlock.Section("업데이트된 강좌 수: ${compareResult.updatedLectureList.size}"),
+                        SlackMessageBlock.Section("삭제된 강좌 수: ${compareResult.deletedLectureList.size}"),
+                        SlackMessageBlock.Section("개발환경에서 검토 후 아래 버튼 통해 라이브 배포해주세요."),
+                        SlackMessageBlock.Action.SUGANG_SNU_CONFIRM
+                    )
+                ).threadTs
+
+                // 기존 결과가 검토 대기 중이었으면 내림
+                if (hasOngoingConfirmProcessOnProd) {
+                    slackMessageService.deleteEmoji(threadTs = ongoingConfirmThread!!, emoji = CONFIRM_ONGOING_EMOJI)
+                    slackMessageService.addEmoji(threadTs = ongoingConfirmThread, emoji = CONFIRM_DONE_EMOJI)
+                    slackMessageService.postMessageToThread(
+                        threadTs = ongoingConfirmThread,
+                        message = SlackMessageRequest(
+                            SlackMessageBlock.Header("새로운 동기화 결과가 업데이트 되어 검토 요청을 자동 종료합니다."),
+                            SlackMessageBlock.Section("새로운 동기화 결과가 자동 배포 기준을 충족하지 않아 검토가 필요합니다."),
+                        )
+                    )
+                }
+
+                slackMessageService.addEmoji(threadTs = newThreadTs, emoji = CONFIRM_ONGOING_EMOJI)
+                cache.set(CacheKey.LOCK_LIVE_SUGANG_SNU_SYNC_UNTIL_CONFIRMED.build(), newThreadTs)
+            }
+
+            // 이전 검토 요청이 있었고, 새로운 결과가 검토 대기 중이 아니면 검토 종료, 새로운 결과 반영
+            !currentResultRequiresConfirm && hasOngoingConfirmProcessOnProd -> {
+                slackMessageService.deleteEmoji(threadTs = ongoingConfirmThread!!, emoji = CONFIRM_ONGOING_EMOJI)
+                slackMessageService.addEmoji(threadTs = ongoingConfirmThread, emoji = CONFIRM_DONE_EMOJI)
+                slackMessageService.postMessageToThread(
+                    threadTs = ongoingConfirmThread,
+                    message = SlackMessageRequest(
+                        SlackMessageBlock.Header("동기화 결과가 업데이트 되어 검토 요청을 자동 종료합니다."),
+                        SlackMessageBlock.Section("새로운 동기화 결과가 자동 배포 기준을 충족하여 검토가 필요하지 않습니다."),
+                        SlackMessageBlock.Section("검토 요청을 종료합니다."),
+                    )
+                )
+
+                lectureService.upsertLectures(compareResult.createdLectureList)
+                lectureService.upsertLectures(updatedLectures)
+                lectureService.deleteLectures(compareResult.deletedLectureList)
+            }
+
+            else -> {
+                lectureService.upsertLectures(compareResult.createdLectureList)
+                lectureService.upsertLectures(updatedLectures)
+                lectureService.deleteLectures(compareResult.deletedLectureList)
+            }
+        }
     }
 
     private suspend fun addBuildingInfos(compareResult: SugangSnuLectureCompareResult): SugangSnuLectureCompareResult {
@@ -319,7 +388,10 @@ class SugangSnuSyncServiceImpl(
         updatedLecture.updatedField.contains(Lecture::classPlaceAndTimes) &&
             timetable.lectures.any {
                 it.lectureId != updatedLecture.oldData.id &&
-                    ClassTimeUtils.timesOverlap(it.classPlaceAndTimes, updatedLecture.newData.classPlaceAndTimes)
+                    ClassTimeUtils.timesOverlap(
+                        it.classPlaceAndTimes,
+                        updatedLecture.newData.classPlaceAndTimes
+                    )
             }
 
     private fun deleteBookmarkLectures(deletedLecture: Lecture): Flow<BookmarkLectureDeleteResult> =
