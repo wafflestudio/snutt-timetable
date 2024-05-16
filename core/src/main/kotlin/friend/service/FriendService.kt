@@ -62,7 +62,9 @@ class FriendServiceImpl(
     companion object {
         private val coroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
         private val friendDisplayNameRegex = "^[a-zA-Z가-힣0-9 ]+$".toRegex()
+        private val friendLinkTtl = Duration.ofDays(14)
         private const val DISPLAY_NAME_MAX_LENGTH = 10
+        private const val FRIEND_LINK_REDIS_PREFIX = "friend-link:"
     }
 
     override suspend fun getMyFriends(myUserId: String, state: FriendState): List<Pair<Friend, User>> {
@@ -168,14 +170,14 @@ class FriendServiceImpl(
         do {
             SecureRandom.getInstanceStrong().nextBytes(bytes)
             encodedKey = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
-        } while (redisTemplate.hasKeyAndAwait("friend-link:$encodedKey"))
-        redisTemplate.opsForValue().setAndAwait("friend-link:$encodedKey", userId, Duration.ofDays(14))
+        } while (redisTemplate.hasKeyAndAwait(FRIEND_LINK_REDIS_PREFIX + encodedKey))
+        redisTemplate.opsForValue().setAndAwait(FRIEND_LINK_REDIS_PREFIX + encodedKey, userId, friendLinkTtl)
         return encodedKey
     }
 
     override suspend fun acceptFriendByLink(userId: String, requestToken: String) {
         val fromUserId = redisTemplate.opsForValue()
-            .getAndAwait("friend-link:$requestToken") ?: throw FriendNotFoundException
+            .getAndAwait(FRIEND_LINK_REDIS_PREFIX + requestToken) ?: throw FriendNotFoundException
         val fromUser = userRepository.findByIdAndActiveTrue(fromUserId) ?: throw UserNotFoundException
         if (fromUser.id == userId)
             throw InvalidFriendException
