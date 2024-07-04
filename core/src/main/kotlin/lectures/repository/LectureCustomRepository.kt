@@ -87,7 +87,9 @@ class LectureCustomRepositoryImpl(
                     }.toTypedArray()
                 ),
             )
-        ).skip(searchCondition.offset).limit(searchCondition.limit)
+        )
+            .with(searchCondition.sortBy)
+            .skip(searchCondition.offset).limit(searchCondition.limit)
     ).asFlow()
 
     private fun makeSearchCriteriaFromQuery(query: String): Criteria =

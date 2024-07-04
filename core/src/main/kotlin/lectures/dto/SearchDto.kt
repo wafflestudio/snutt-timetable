@@ -1,6 +1,7 @@
 package com.wafflestudio.snu4t.lectures.dto
 
 import com.wafflestudio.snu4t.common.enum.Semester
+import org.springframework.data.domain.Sort
 
 data class SearchDto(
     val year: Int,
@@ -18,4 +19,5 @@ data class SearchDto(
     val page: Int = 0,
     val offset: Long = page * 20L,
     val limit: Int = 20,
+    val sortBy: Sort,
 )
