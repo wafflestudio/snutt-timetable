@@ -4,18 +4,17 @@ import com.fasterxml.jackson.annotation.JsonValue
 import org.springframework.data.domain.Sort
 
 enum class SortCriteria(
-    @JsonValue
     val value: Int,
+    @JsonValue
     val fullName: String
 ) {
     ID(1, "기본값"),
-    RATING(2, "평점");
+    RATING(2, "평점순");
 
     companion object {
         fun getSort(sortCriteria: SortCriteria?): Sort = when (sortCriteria) {
             RATING -> Sort.by("evInfo.avgRating").descending()
             else -> Sort.unsorted()
         }
-        fun from(name: String?) = SortCriteria.values().find { it.name == name }
     }
 }
