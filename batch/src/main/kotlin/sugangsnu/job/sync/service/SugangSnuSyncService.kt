@@ -130,7 +130,7 @@ class SugangSnuSyncServiceImpl(
                 credit = parsedTag.credit.sorted().map { "${it}학점" },
                 instructor = parsedTag.instructor.filterNotNull().filter { it.isNotBlank() }.sorted(),
                 category = parsedTag.category.filterNotNull().filter { it.isNotBlank() }.sorted(),
-                sortCriteria = SortCriteria.values().map { it.fullName }.sorted()
+                sortCriteria = SortCriteria.values().map { it.fullName }.filterNot { it == "기본값" }.sorted()
             )
         }
         val tagList = tagListRepository.findByYearAndSemester(coursebook.year, coursebook.semester)
