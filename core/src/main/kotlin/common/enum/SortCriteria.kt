@@ -9,7 +9,7 @@ enum class SortCriteria(
     val fullName: String
 ) {
     ID(1, "기본값"),
-    RATING(2, "평점순");
+    RATING(2, "평점 순");
 
     companion object {
         fun getSort(sortCriteria: SortCriteria?): Sort = when (sortCriteria) {
