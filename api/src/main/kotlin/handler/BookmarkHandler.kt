@@ -20,7 +20,14 @@ class BookmarkHandler(
         val userId: String = req.userId
         val year: Int = req.parseRequiredQueryParam("year")
         val semester: Semester = req.parseRequiredQueryParam("semester") { Semester.getOfValue(it.toInt()) }
-        bookmarkService.getBookmark(userId, year, semester).let(::BookmarkResponse)
+        val bookmark = bookmarkService.getBookmark(userId, year, semester)
+        val bookmarkLectureDtos = bookmarkService.convertBookmarkLecturesToBookmarkLectureDtos(bookmark.lectures)
+
+        BookmarkResponse(
+            year = bookmark.year,
+            semester = bookmark.semester.value,
+            lectures = bookmarkLectureDtos
+        )
     }
 
     suspend fun existsBookmarkLecture(req: ServerRequest) = handle(req) {

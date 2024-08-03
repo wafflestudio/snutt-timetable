@@ -74,6 +74,11 @@ class MainRouter(
             POST("/login/google", authHandler::loginGoogle)
             POST("/login/kakao", authHandler::loginKakao)
             POST("/logout", authHandler::logout)
+            POST("/password/reset/email/check", authHandler::getMaskedEmail)
+            POST("/password/reset/email/send", authHandler::sendResetPasswordCode)
+            POST("/password/reset/verification/code", authHandler::verifyResetPasswordCode)
+            POST("/password/reset", authHandler::resetPassword)
+            POST("/id/find", authHandler::findId)
         }
     }
 
@@ -85,6 +90,12 @@ class MainRouter(
             POST("/device/{id}", deviceHandler::addRegistrationId)
             DELETE("/device/{id}", deviceHandler::removeRegistrationId)
             DELETE("/account", userHandler::deleteAccount)
+            POST("/email/verification", userHandler::sendVerificationEmail)
+            GET("/email/verification", userHandler::getEmailVerification)
+            DELETE("/email/verification", userHandler::resetEmailVerification)
+            POST("/email/verification/code", userHandler::confirmEmailVerification)
+            POST("/password", userHandler::attachLocal)
+            PUT("/password", userHandler::changePassword)
         }
         "/users".nest {
             GET("/me", userHandler::getUserMe)

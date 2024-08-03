@@ -1,9 +1,15 @@
 package com.wafflestudio.snu4t.router.docs
 
 import com.wafflestudio.snu4t.common.dto.OkResponse
+import com.wafflestudio.snu4t.users.dto.EmailVerificationResultDto
+import com.wafflestudio.snu4t.users.dto.LocalLoginRequest
+import com.wafflestudio.snu4t.users.dto.PasswordChangeRequest
+import com.wafflestudio.snu4t.users.dto.SendEmailRequest
+import com.wafflestudio.snu4t.users.dto.TokenResponse
 import com.wafflestudio.snu4t.users.dto.UserDto
 import com.wafflestudio.snu4t.users.dto.UserLegacyDto
 import com.wafflestudio.snu4t.users.dto.UserPatchRequest
+import com.wafflestudio.snu4t.users.dto.VerificationCodeRequest
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.enums.ParameterIn
@@ -65,6 +71,52 @@ import org.springframework.web.bind.annotation.RequestMethod
         operation = Operation(
             operationId = "deleteAccount",
             responses = [ApiResponse(responseCode = "200", content = [Content(schema = Schema(implementation = OkResponse::class))])]
+        ),
+    ),
+    RouterOperation(
+        path = "/v1/user/email/verification", method = [RequestMethod.DELETE], produces = [MediaType.APPLICATION_JSON_VALUE],
+        operation = Operation(
+            operationId = "resetEmailVerification",
+            responses = [ApiResponse(responseCode = "200", content = [Content(schema = Schema(implementation = EmailVerificationResultDto::class))])]
+        ),
+    ),
+    RouterOperation(
+        path = "/v1/user/email/verification", method = [RequestMethod.GET], produces = [MediaType.APPLICATION_JSON_VALUE],
+        operation = Operation(
+            operationId = "getEmailVerification",
+            responses = [ApiResponse(responseCode = "200", content = [Content(schema = Schema(implementation = EmailVerificationResultDto::class))])]
+        ),
+    ),
+    RouterOperation(
+        path = "/v1/user/email/verification", method = [RequestMethod.POST], produces = [MediaType.APPLICATION_JSON_VALUE],
+        operation = Operation(
+            operationId = "sendVerificationEmail",
+            requestBody = RequestBody(content = [Content(schema = Schema(implementation = SendEmailRequest::class))]),
+            responses = [ApiResponse(responseCode = "200", content = [Content(schema = Schema(implementation = OkResponse::class))])]
+        ),
+    ),
+    RouterOperation(
+        path = "/v1/user/email/verification/code", method = [RequestMethod.POST], produces = [MediaType.APPLICATION_JSON_VALUE],
+        operation = Operation(
+            operationId = "confirmEmailVerification",
+            requestBody = RequestBody(content = [Content(schema = Schema(implementation = VerificationCodeRequest::class))]),
+            responses = [ApiResponse(responseCode = "200", content = [Content(schema = Schema(implementation = EmailVerificationResultDto::class))])]
+        ),
+    ),
+    RouterOperation(
+        path = "/v1/user/password", method = [RequestMethod.POST], produces = [MediaType.APPLICATION_JSON_VALUE],
+        operation = Operation(
+            operationId = "attachLocal",
+            requestBody = RequestBody(content = [Content(schema = Schema(implementation = LocalLoginRequest::class))]),
+            responses = [ApiResponse(responseCode = "200", content = [Content(schema = Schema(implementation = TokenResponse::class))])]
+        ),
+    ),
+    RouterOperation(
+        path = "/v1/user/password", method = [RequestMethod.PUT], produces = [MediaType.APPLICATION_JSON_VALUE],
+        operation = Operation(
+            operationId = "changePassword",
+            requestBody = RequestBody(content = [Content(schema = Schema(implementation = PasswordChangeRequest::class))]),
+            responses = [ApiResponse(responseCode = "200", content = [Content(schema = Schema(implementation = TokenResponse::class))])]
         ),
     ),
 )

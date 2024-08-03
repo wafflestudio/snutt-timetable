@@ -47,6 +47,10 @@ enum class ErrorType(
     DEFAULT_THEME_DELETE_ERROR(HttpStatus.BAD_REQUEST, 40013, "default 테마는 삭제할 수 없습니다.", "default 테마는 삭제할 수 없습니다."),
     NOT_DEFAULT_THEME_ERROR(HttpStatus.BAD_REQUEST, 40014, "default 테마가 아닙니다.", "default 테마가 아닙니다."),
     TOO_MANY_FILES(HttpStatus.BAD_REQUEST, 40015, "파일 개수가 너무 많습니다.", "파일 개수가 너무 많습니다."),
+    EMAIL_ALREADY_VERIFIED(HttpStatus.BAD_REQUEST, 40016, "이미 메일 인증이 완료된 유저입니다.", "이미 메일 인증이 완료된 유저입니다."),
+    TOO_MANY_VERIFICATION_CODE_REQUEST(HttpStatus.BAD_REQUEST, 40017, "인증 코드 요청이 너무 많습니다.", "인증 코드 요청이 너무 많습니다."),
+    INVALID_VERIFICATION_CODE(HttpStatus.BAD_REQUEST, 40018, "인증 코드가 유효하지 않습니다.", "인증 코드가 유효하지 않습니다."),
+    ALREADY_LOCAL_ACCOUNT(HttpStatus.BAD_REQUEST, 40019, "이미 로컬 계정이 존재합니다.", "이미 로컬 계정이 존재합니다."),
 
     SOCIAL_CONNECT_FAIL(HttpStatus.UNAUTHORIZED, 40100, "소셜 로그인에 실패했습니다.", "소셜 로그인에 실패했습니다."),
 

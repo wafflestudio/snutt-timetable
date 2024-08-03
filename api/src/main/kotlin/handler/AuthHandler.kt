@@ -2,15 +2,21 @@ package com.wafflestudio.snu4t.handler
 
 import com.wafflestudio.snu4t.common.dto.OkResponse
 import com.wafflestudio.snu4t.middleware.SnuttRestApiNoAuthMiddleware
+import com.wafflestudio.snu4t.users.dto.EmailResponse
 import com.wafflestudio.snu4t.users.dto.FacebookLoginRequest
+import com.wafflestudio.snu4t.users.dto.GetMaskedEmailRequest
 import com.wafflestudio.snu4t.users.dto.LocalLoginRequest
 import com.wafflestudio.snu4t.users.dto.LocalRegisterRequest
 import com.wafflestudio.snu4t.users.dto.LogoutRequest
+import com.wafflestudio.snu4t.users.dto.PasswordResetRequest
+import com.wafflestudio.snu4t.users.dto.SendEmailRequest
 import com.wafflestudio.snu4t.users.dto.SocialLoginRequest
+import com.wafflestudio.snu4t.users.dto.VerificationCodeRequest
 import com.wafflestudio.snu4t.users.service.UserService
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
+import org.springframework.web.reactive.function.server.awaitBody
 import org.springframework.web.reactive.function.server.awaitBodyOrNull
 import org.springframework.web.server.ServerWebInputException
 
@@ -54,6 +60,35 @@ class AuthHandler(
         val logoutRequest: LogoutRequest = req.awaitBodyOrNull() ?: throw ServerWebInputException("Invalid body")
         userService.logout(userId, logoutRequest)
 
+        OkResponse()
+    }
+
+    suspend fun findId(req: ServerRequest): ServerResponse = handle(req) {
+        val email = req.awaitBody<SendEmailRequest>().email
+        userService.sendLocalIdToEmail(email)
+        OkResponse()
+    }
+
+    suspend fun sendResetPasswordCode(req: ServerRequest): ServerResponse = handle(req) {
+        val email = req.awaitBody<SendEmailRequest>().email
+        userService.sendResetPasswordCode(email)
+        OkResponse()
+    }
+
+    suspend fun verifyResetPasswordCode(req: ServerRequest): ServerResponse = handle(req) {
+        val body = req.awaitBody<VerificationCodeRequest>()
+        userService.verifyResetPasswordCode(body.userId!!, body.code)
+        OkResponse()
+    }
+
+    suspend fun getMaskedEmail(req: ServerRequest): ServerResponse = handle(req) {
+        val id = req.awaitBody<GetMaskedEmailRequest>().userId
+        EmailResponse(userService.getMaskedEmail(id))
+    }
+
+    suspend fun resetPassword(req: ServerRequest): ServerResponse = handle(req) {
+        val body = req.awaitBody<PasswordResetRequest>()
+        userService.resetPassword(body.userId, body.password, body.code)
         OkResponse()
     }
 }

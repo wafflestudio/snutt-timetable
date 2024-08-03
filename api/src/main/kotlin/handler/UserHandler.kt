@@ -4,9 +4,14 @@ import com.wafflestudio.snu4t.common.dto.OkResponse
 import com.wafflestudio.snu4t.common.extension.toZonedDateTime
 import com.wafflestudio.snu4t.middleware.SnuttRestApiDefaultMiddleware
 import com.wafflestudio.snu4t.users.data.User
+import com.wafflestudio.snu4t.users.dto.EmailVerificationResultDto
+import com.wafflestudio.snu4t.users.dto.LocalLoginRequest
+import com.wafflestudio.snu4t.users.dto.PasswordChangeRequest
+import com.wafflestudio.snu4t.users.dto.SendEmailRequest
 import com.wafflestudio.snu4t.users.dto.UserDto
 import com.wafflestudio.snu4t.users.dto.UserLegacyDto
 import com.wafflestudio.snu4t.users.dto.UserPatchRequest
+import com.wafflestudio.snu4t.users.dto.VerificationCodeRequest
 import com.wafflestudio.snu4t.users.service.UserNicknameService
 import com.wafflestudio.snu4t.users.service.UserService
 import org.springframework.stereotype.Component
@@ -52,6 +57,43 @@ class UserHandler(
     suspend fun deleteAccount(req: ServerRequest): ServerResponse = handle(req) {
         userService.update(req.getContext().user!!.copy(active = false))
         OkResponse()
+    }
+
+    suspend fun sendVerificationEmail(req: ServerRequest): ServerResponse = handle(req) {
+        val user = req.getContext().user!!
+        val email = req.awaitBody<SendEmailRequest>().email
+        userService.sendVerificationCode(user, email)
+        OkResponse()
+    }
+
+    suspend fun confirmEmailVerification(req: ServerRequest): ServerResponse = handle(req) {
+        val user = req.getContext().user!!
+        val code = req.awaitBody<VerificationCodeRequest>().code
+        userService.verifyEmail(user, code)
+        EmailVerificationResultDto(true)
+    }
+
+    suspend fun resetEmailVerification(req: ServerRequest): ServerResponse = handle(req) {
+        val user = req.getContext().user!!
+        userService.resetEmailVerification(user)
+        EmailVerificationResultDto(false)
+    }
+
+    suspend fun getEmailVerification(req: ServerRequest): ServerResponse = handle(req) {
+        val user = req.getContext().user!!
+        EmailVerificationResultDto(user.isEmailVerified ?: false)
+    }
+
+    suspend fun attachLocal(req: ServerRequest): ServerResponse = handle(req) {
+        val user = req.getContext().user!!
+        val body = req.awaitBody<LocalLoginRequest>()
+        userService.attachLocal(user, body)
+    }
+
+    suspend fun changePassword(req: ServerRequest): ServerResponse = handle(req) {
+        val user = req.getContext().user!!
+        val body = req.awaitBody<PasswordChangeRequest>()
+        userService.changePassword(user, body)
     }
 
     private fun buildUserDto(user: User) = UserDto(

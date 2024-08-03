@@ -49,6 +49,10 @@ object InvalidThemeColorCountException : Snu4tException(ErrorType.INVALID_THEME_
 object DefaultThemeDeleteErrorException : Snu4tException(ErrorType.DEFAULT_THEME_DELETE_ERROR)
 object NotDefaultThemeErrorException : Snu4tException(ErrorType.NOT_DEFAULT_THEME_ERROR)
 object TooManyFilesException : Snu4tException(ErrorType.TOO_MANY_FILES)
+object EmailAlreadyVerifiedException : Snu4tException(ErrorType.EMAIL_ALREADY_VERIFIED)
+object TooManyVerificationCodeRequestException : Snu4tException(ErrorType.TOO_MANY_VERIFICATION_CODE_REQUEST)
+object InvalidVerificationCodeException : Snu4tException(ErrorType.INVALID_VERIFICATION_CODE)
+object AlreadyLocalAccountException : Snu4tException(ErrorType.ALREADY_LOCAL_ACCOUNT)
 
 object SocialConnectFailException : Snu4tException(ErrorType.SOCIAL_CONNECT_FAIL)
 
