@@ -100,9 +100,9 @@ object CustomLectureResetException : Snu4tException(ErrorType.CANNOT_RESET_CUSTO
 
 object TimetableNotFoundException : Snu4tException(ErrorType.TIMETABLE_NOT_FOUND)
 
-object PrimaryTimetableNotFoundException : Snu4tException(ErrorType.TIMETABLE_NOT_FOUND)
+object PrimaryTimetableNotFoundException : Snu4tException(ErrorType.PRIMARY_TIMETABLE_NOT_FOUND)
 
-object TimetableNotPrimaryException : Snu4tException(ErrorType.DEFAULT_ERROR)
+object TimetableNotPrimaryException : Snu4tException(ErrorType.TIMETABLE_NOT_PRIMARY)
 
 object ConfigNotFoundException : Snu4tException(ErrorType.CONFIG_NOT_FOUND)
 
@@ -131,7 +131,6 @@ class DuplicateEmailException(authProviders: List<AuthProvider>) : Snu4tExceptio
                 authProviders.contains(AuthProvider.LOCAL) && socialProviders.isEmpty() -> "이미 가입된 이메일입니다. 아이디 찾기를 이용해주세요."
                 authProviders.contains(AuthProvider.LOCAL) && socialProviders.isNotEmpty() ->
                     "이미 가입된 이메일입니다. (${socialProviders.joinToString(", ") { it.value }}) 중 하나의 계정으로 로그인하거나 '아이디 찾기'를 이용해주세요."
-
                 socialProviders.isNotEmpty() -> "이미 가입된 이메일입니다. 이전에 가입한 ${socialProviders.joinToString(", ") { it.value }} 계정으로 로그인해주세요."
                 else -> throw IllegalStateException("로그인 방법이 없는 계정")
             }
