@@ -1,5 +1,6 @@
 package com.wafflestudio.snu4t.handler
 
+import com.wafflestudio.snu4t.auth.AuthProvider
 import com.wafflestudio.snu4t.common.dto.OkResponse
 import com.wafflestudio.snu4t.middleware.SnuttRestApiNoAuthMiddleware
 import com.wafflestudio.snu4t.users.dto.EmailResponse
@@ -40,31 +41,31 @@ class AuthHandler(
     suspend fun loginFacebookLegacy(req: ServerRequest): ServerResponse =
         handle(req) {
             val facebookLoginRequest: FacebookLoginRequest = req.awaitBodyOrNull() ?: throw ServerWebInputException("Invalid body")
-            userService.loginFacebook(SocialLoginRequest(facebookLoginRequest.fbToken))
+            userService.socialLogin(SocialLoginRequest(facebookLoginRequest.fbToken), AuthProvider.FACEBOOK)
         }
 
     suspend fun loginFacebook(req: ServerRequest): ServerResponse =
         handle(req) {
             val socialLoginRequest: SocialLoginRequest = req.awaitBodyOrNull() ?: throw ServerWebInputException("Invalid body")
-            userService.loginFacebook(socialLoginRequest)
+            userService.socialLogin(socialLoginRequest, AuthProvider.FACEBOOK)
         }
 
     suspend fun loginGoogle(req: ServerRequest): ServerResponse =
         handle(req) {
             val socialLoginRequest: SocialLoginRequest = req.awaitBodyOrNull() ?: throw ServerWebInputException("Invalid body")
-            userService.loginGoogle(socialLoginRequest)
+            userService.socialLogin(socialLoginRequest, AuthProvider.GOOGLE)
         }
 
     suspend fun loginKakao(req: ServerRequest): ServerResponse =
         handle(req) {
             val socialLoginRequest: SocialLoginRequest = req.awaitBodyOrNull() ?: throw ServerWebInputException("Invalid body")
-            userService.loginKakao(socialLoginRequest)
+            userService.socialLogin(socialLoginRequest, AuthProvider.KAKAO)
         }
 
     suspend fun loginApple(req: ServerRequest): ServerResponse =
         handle(req) {
             val socialLoginRequest: SocialLoginRequest = req.awaitBodyOrNull() ?: throw ServerWebInputException("Invalid body")
-            userService.loginApple(socialLoginRequest)
+            userService.socialLogin(socialLoginRequest, AuthProvider.APPLE)
         }
 
     suspend fun logout(req: ServerRequest): ServerResponse =

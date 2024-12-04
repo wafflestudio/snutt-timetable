@@ -3,6 +3,7 @@ package com.wafflestudio.snu4t.users.service
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.wafflestudio.snu4t.auth.AuthProvider
+import com.wafflestudio.snu4t.auth.OAuth2UserResponse
 import com.wafflestudio.snu4t.common.cache.Cache
 import com.wafflestudio.snu4t.common.cache.CacheKey
 import com.wafflestudio.snu4t.common.exception.AlreadyLocalAccountException
@@ -64,13 +65,10 @@ interface UserService {
 
     suspend fun loginLocal(localRegisterRequest: LocalLoginRequest): LoginResponse
 
-    suspend fun loginFacebook(socialLoginRequest: SocialLoginRequest): LoginResponse
-
-    suspend fun loginGoogle(socialLoginRequest: SocialLoginRequest): LoginResponse
-
-    suspend fun loginKakao(socialLoginRequest: SocialLoginRequest): LoginResponse
-
-    suspend fun loginApple(socialLoginRequest: SocialLoginRequest): LoginResponse
+    suspend fun socialLogin(
+        socialLoginRequest: SocialLoginRequest,
+        authProvider: AuthProvider,
+    ): LoginResponse
 
     suspend fun logout(
         userId: String,
@@ -180,7 +178,7 @@ class UserServiceImpl(
 
         val cacheKey = CacheKey.LOCK_REGISTER_LOCAL.build(localId)
 
-        runCatching {
+        return runCatching {
             if (!cache.acquireLock(cacheKey)) throw DuplicateLocalIdException
 
             if (!authService.isValidLocalId(localId)) throw InvalidLocalIdException
@@ -195,7 +193,12 @@ class UserServiceImpl(
             if (userRepository.existsByCredentialLocalIdAndActiveTrue(localId)) throw DuplicateLocalIdException
 
             val credential = authService.buildLocalCredential(localId, password)
-            return signup(credential, email, isEmailVerified = false)
+            val user = signup(credential, email, isEmailVerified = false)
+
+            LoginResponse(
+                userId = user.id!!,
+                token = user.credentialHash,
+            )
         }.getOrElse {
             if (it is Snu4tException) cache.releaseLock(cacheKey)
             throw it
@@ -216,21 +219,36 @@ class UserServiceImpl(
         )
     }
 
-    override suspend fun loginFacebook(socialLoginRequest: SocialLoginRequest): LoginResponse {
+    override suspend fun socialLogin(
+        socialLoginRequest: SocialLoginRequest,
+        authProvider: AuthProvider,
+    ): LoginResponse {
         val token = socialLoginRequest.token
-        val oauth2UserResponse = authService.socialLoginWithAccessToken(AuthProvider.FACEBOOK, token)
+        val oauth2UserResponse = authService.socialLoginWithAccessToken(authProvider, token)
 
-        val user = userRepository.findByCredentialFbIdAndActiveTrue(oauth2UserResponse.socialId)
+        val user =
+            when (authProvider) {
+                AuthProvider.FACEBOOK ->
+                    userRepository.findByCredentialFbIdAndActiveTrue(oauth2UserResponse.socialId) ?: signupFacebook(oauth2UserResponse)
+                AuthProvider.GOOGLE ->
+                    userRepository.findByCredentialGoogleSubAndActiveTrue(oauth2UserResponse.socialId) ?: signupGoogle(oauth2UserResponse)
+                AuthProvider.KAKAO ->
+                    userRepository.findByCredentialKakaoSubAndActiveTrue(oauth2UserResponse.socialId) ?: signupKakao(oauth2UserResponse)
+                AuthProvider.APPLE -> {
+                    if (oauth2UserResponse.transferInfo != null) {
+                        transferAppleCredential(oauth2UserResponse.transferInfo, oauth2UserResponse.socialId, oauth2UserResponse.email)
+                    }
+                    userRepository.findByCredentialAppleSubAndActiveTrue(oauth2UserResponse.socialId) ?: signupApple(oauth2UserResponse)
+                }
+                AuthProvider.LOCAL -> throw IllegalStateException("local login is not supported in this method")
+            }
+        return LoginResponse(
+            userId = user.id!!,
+            token = user.credentialHash,
+        )
+    }
 
-        if (user != null) {
-            return LoginResponse(
-                userId = user.id!!,
-                token = user.credentialHash,
-            )
-        }
-
-        val credential = authService.buildFacebookCredential(oauth2UserResponse)
-
+    private suspend fun signupFacebook(oauth2UserResponse: OAuth2UserResponse): User {
         if (oauth2UserResponse.email != null) {
             userRepository.findByEmailIgnoreCaseAndIsEmailVerifiedTrueAndActiveTrue(oauth2UserResponse.email)?.let {
                 throw DuplicateEmailException(getAttachedAuthProviders(it))
@@ -239,79 +257,37 @@ class UserServiceImpl(
             log.warn("facebook email is null: $oauth2UserResponse")
         }
 
+        val credential = authService.buildFacebookCredential(oauth2UserResponse)
         return signup(credential, oauth2UserResponse.email, false)
     }
 
-    override suspend fun loginGoogle(socialLoginRequest: SocialLoginRequest): LoginResponse {
-        val token = socialLoginRequest.token
-        val oauth2UserResponse = authService.socialLoginWithAccessToken(AuthProvider.GOOGLE, token)
-
-        val user = userRepository.findByCredentialGoogleSubAndActiveTrue(oauth2UserResponse.socialId)
-
-        if (user != null) {
-            return LoginResponse(
-                userId = user.id!!,
-                token = user.credentialHash,
-            )
-        }
-
+    private suspend fun signupGoogle(oauth2UserResponse: OAuth2UserResponse): User {
         checkNotNull(oauth2UserResponse.email) { "google email is null: $oauth2UserResponse" }
         userRepository.findByEmailIgnoreCaseAndIsEmailVerifiedTrueAndActiveTrue(oauth2UserResponse.email)?.let {
             throw DuplicateEmailException(getAttachedAuthProviders(it))
         }
 
         val credential = authService.buildGoogleCredential(oauth2UserResponse)
-
         return signup(credential, oauth2UserResponse.email, false)
     }
 
-    override suspend fun loginKakao(socialLoginRequest: SocialLoginRequest): LoginResponse {
-        val token = socialLoginRequest.token
-        val oauth2UserResponse = authService.socialLoginWithAccessToken(AuthProvider.KAKAO, token)
-
-        val user = userRepository.findByCredentialKakaoSubAndActiveTrue(oauth2UserResponse.socialId)
-
-        if (user != null) {
-            return LoginResponse(
-                userId = user.id!!,
-                token = user.credentialHash,
-            )
-        }
-
+    private suspend fun signupKakao(oauth2UserResponse: OAuth2UserResponse): User {
         checkNotNull(oauth2UserResponse.email) { "kakao email is null: $oauth2UserResponse" }
         userRepository.findByEmailIgnoreCaseAndIsEmailVerifiedTrueAndActiveTrue(oauth2UserResponse.email)?.let {
             throw DuplicateEmailException(getAttachedAuthProviders(it))
         }
 
         val credential = authService.buildKakaoCredential(oauth2UserResponse)
-
         return signup(credential, oauth2UserResponse.email, false)
     }
 
-    override suspend fun loginApple(socialLoginRequest: SocialLoginRequest): LoginResponse {
-        val token = socialLoginRequest.token
-        val oauth2UserResponse = authService.socialLoginWithAccessToken(AuthProvider.APPLE, token)
-
-        if (oauth2UserResponse.transferInfo != null) {
-            transferAppleCredential(oauth2UserResponse.transferInfo, oauth2UserResponse.socialId, oauth2UserResponse.email)
-        }
-
-        val user = userRepository.findByCredentialAppleSubAndActiveTrue(oauth2UserResponse.socialId)
-
-        if (user != null) {
-            return LoginResponse(
-                userId = user.id!!,
-                token = user.credentialHash,
-            )
-        }
-
+    private suspend fun signupApple(oauth2UserResponse: OAuth2UserResponse): User {
         checkNotNull(oauth2UserResponse.email) { "apple email is null: $oauth2UserResponse" }
         userRepository.findByEmailIgnoreCaseAndIsEmailVerifiedTrueAndActiveTrue(oauth2UserResponse.email)?.let {
             throw DuplicateEmailException(getAttachedAuthProviders(it))
         }
 
         val credential = authService.buildAppleCredential(oauth2UserResponse)
-
         return signup(credential, oauth2UserResponse.email, false)
     }
 
@@ -320,14 +296,14 @@ class UserServiceImpl(
         sub: String,
         email: String?,
     ) {
-        userRepository.findByCredentialAppleTransferSubAndActiveTrue(transferSub)?.let {
-            it.credential.apply {
+        val exisitingUser = userRepository.findByCredentialAppleTransferSubAndActiveTrue(transferSub)
+        if (exisitingUser != null) {
+            exisitingUser.credential.apply {
                 appleSub = sub
                 appleEmail = email
-                appleTransferSub = transferSub
             }
-            it.credentialHash = authService.generateCredentialHash(it.credential)
-            userRepository.save(it)
+            exisitingUser.credentialHash = authService.generateCredentialHash(exisitingUser.credential)
+            userRepository.save(exisitingUser)
         }
     }
 
@@ -344,9 +320,8 @@ class UserServiceImpl(
         credential: Credential,
         email: String?,
         isEmailVerified: Boolean,
-    ): LoginResponse {
+    ): User {
         val credentialHash = authService.generateCredentialHash(credential)
-
         val randomNickname = userNicknameService.generateUniqueRandomNickname()
 
         val user =
@@ -360,11 +335,7 @@ class UserServiceImpl(
             ).let { userRepository.save(it) }
 
         eventPublisher.publishEvent(SignupEvent(user.id!!))
-
-        return LoginResponse(
-            userId = user.id,
-            token = credentialHash,
-        )
+        return user
     }
 
     override suspend fun logout(
