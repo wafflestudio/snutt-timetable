@@ -93,6 +93,17 @@ import org.springframework.web.bind.annotation.RequestMethod
     ),
     RouterOperation(
         path = "/v1/themes/{themeId}",
+        method = [RequestMethod.GET],
+        produces = [MediaType.APPLICATION_JSON_VALUE],
+        operation =
+            Operation(
+                operationId = "getTheme",
+                parameters = [Parameter(`in` = ParameterIn.PATH, name = "themeId", required = true)],
+                responses = [ApiResponse(responseCode = "200", content = [Content(schema = Schema())])],
+            ),
+    ),
+    RouterOperation(
+        path = "/v1/themes/{themeId}",
         method = [RequestMethod.PATCH],
         produces = [MediaType.APPLICATION_JSON_VALUE],
         operation =
