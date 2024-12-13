@@ -45,6 +45,14 @@ class TimetableThemeHandler(
             ListResponse(result)
         }
 
+    suspend fun getTheme(req: ServerRequest) =
+        handle(req) {
+            val userId = req.userId
+            val themeId = req.pathVariable("themeId")
+
+            TimetableThemeDto(timetableThemeService.getTheme(userId, themeId))
+        }
+
     suspend fun addTheme(req: ServerRequest) =
         handle(req) {
             val userId = req.userId
