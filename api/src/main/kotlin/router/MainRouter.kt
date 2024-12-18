@@ -38,8 +38,12 @@ import com.wafflestudio.snu4t.router.docs.ThemeDocs
 import com.wafflestudio.snu4t.router.docs.TimetableDocs
 import com.wafflestudio.snu4t.router.docs.UserDocs
 import com.wafflestudio.snu4t.router.docs.VacancyNotificationDocs
+import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.context.annotation.Bean
+import org.springframework.core.io.ClassPathResource
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
+import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.server.CoRouterFunctionDsl
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.buildAndAwait
@@ -312,6 +316,20 @@ class MainRouter(
         v1CoRouter {
             "/feedback".nest {
                 POST("", feedbackHandler::postFeedback)
+            }
+        }
+
+    // TODO: 웹 api 사용 확인 후 삭제
+    @Bean
+    fun legacyRouter() =
+        v1CoRouter {
+            GET("/colors/vivid_ios") {
+                val jsonResource = ClassPathResource("static/color_vivid_ios.json")
+                ServerResponse
+                    .ok()
+                    .contentType(MediaType.APPLICATION_JSON) // Content-Type 설정
+                    .body(BodyInserters.fromResource(jsonResource))
+                    .awaitSingle()
             }
         }
 
