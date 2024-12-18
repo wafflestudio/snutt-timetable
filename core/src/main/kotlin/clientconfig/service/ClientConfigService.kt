@@ -43,6 +43,13 @@ class ClientConfigService(
         return clientConfigRepository.findAll()
             .toList()
             .filter { it.isAdaptable(osType, appVersion) }
+            .sortedByDescending {
+                when (osType) {
+                    OsType.ANDROID -> it.minAndroidVersion
+                    OsType.IOS -> it.minIosVersion
+                    else -> it.minAndroidVersion
+                }
+            }
             .distinctBy { it.name }
     }
 
