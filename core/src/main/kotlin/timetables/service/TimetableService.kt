@@ -90,7 +90,7 @@ interface TimetableService {
 
     suspend fun getCoursebooksWithPrimaryTable(userId: String): List<CoursebookDto>
 
-    suspend fun createDefaultTable(userId: String)
+    suspend fun createDefaultTable(userId: String): Timetable
 
     suspend fun setPrimary(
         userId: String,
@@ -249,7 +249,7 @@ class TimetableServiceImpl(
             .sortedByDescending { it.order }
     }
 
-    override suspend fun createDefaultTable(userId: String) {
+    override suspend fun createDefaultTable(userId: String): Timetable {
         val coursebook = coursebookService.getLatestCoursebook()
         val defaultTheme = timetableThemeService.getDefaultTheme(userId)
 
@@ -262,7 +262,7 @@ class TimetableServiceImpl(
                 theme = defaultTheme.toBasicThemeType(),
                 themeId = defaultTheme.toIdForTimetable(),
             )
-        timetableRepository.save(timetable)
+        return timetableRepository.save(timetable)
     }
 
     private suspend fun getLatestCopiedTimetableNumber(

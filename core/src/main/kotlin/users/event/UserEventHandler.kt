@@ -11,6 +11,7 @@ class UserEventHandler(
 ) {
     @EventListener
     suspend fun handleSignupEvent(event: SignupEvent) {
-        timetableService.createDefaultTable(event.userId)
+        val defaultTimetable = timetableService.createDefaultTable(event.userId)
+        timetableService.setPrimary(event.userId, defaultTimetable.id!!)
     }
 }
