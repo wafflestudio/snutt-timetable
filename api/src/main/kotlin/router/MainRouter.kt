@@ -15,6 +15,7 @@ import com.wafflestudio.snutt.handler.FriendTableHandler
 import com.wafflestudio.snutt.handler.LectureSearchHandler
 import com.wafflestudio.snutt.handler.NotificationHandler
 import com.wafflestudio.snutt.handler.PopupHandler
+import com.wafflestudio.snutt.handler.PushPreferenceHandler
 import com.wafflestudio.snutt.handler.StaticPageHandler
 import com.wafflestudio.snutt.handler.TagHandler
 import com.wafflestudio.snutt.handler.TimetableHandler
@@ -70,6 +71,7 @@ class MainRouter(
     private val feedbackHandler: FeedbackHandler,
     private val staticPageHandler: StaticPageHandler,
     private val evServiceHandler: EvServiceHandler,
+    private val pushPreferenceHandler: PushPreferenceHandler,
 ) {
     @Bean
     fun healthCheck() =
@@ -342,5 +344,17 @@ class MainRouter(
             GET("/member").invoke { staticPageHandler.member() }
             GET("/privacy_policy").invoke { staticPageHandler.privacyPolicy() }
             GET("/terms_of_service").invoke { staticPageHandler.termsOfService() }
+        }
+
+    @Bean
+    fun pushPreferenceRouter() =
+        v1CoRouter {
+            "/push/preferences".nest {
+                GET("", pushPreferenceHandler::getPushPreferences)
+                POST("lecture-update", pushPreferenceHandler::enableLectureUpdate)
+                DELETE("lecture-update", pushPreferenceHandler::disableLectureUpdate)
+                POST("vacancy-notification", pushPreferenceHandler::enableVacancyNotification)
+                DELETE("vacancy-notification", pushPreferenceHandler::disableVacancyNotification)
+            }
         }
 }
