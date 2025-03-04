@@ -7,7 +7,6 @@ import com.wafflestudio.snutt.users.dto.FacebookLoginRequest
 import com.wafflestudio.snutt.users.dto.GetMaskedEmailRequest
 import com.wafflestudio.snutt.users.dto.LocalLoginRequest
 import com.wafflestudio.snutt.users.dto.LocalRegisterRequest
-import com.wafflestudio.snutt.users.dto.LogoutRequest
 import com.wafflestudio.snutt.users.dto.PasswordResetRequest
 import com.wafflestudio.snutt.users.dto.SendEmailRequest
 import com.wafflestudio.snutt.users.dto.SocialLoginRequest
@@ -71,15 +70,6 @@ class AuthHandler(
         handle(req) {
             val socialLoginRequest: SocialLoginRequest = req.awaitBodyOrNull() ?: throw ServerWebInputException("Invalid body")
             userService.loginApple(socialLoginRequest)
-        }
-
-    suspend fun logout(req: ServerRequest): ServerResponse =
-        handle(req) {
-            val userId = req.userId
-            val logoutRequest: LogoutRequest = req.awaitBodyOrNull() ?: throw ServerWebInputException("Invalid body")
-            userService.logout(userId, logoutRequest)
-
-            OkResponse()
         }
 
     suspend fun findId(req: ServerRequest): ServerResponse =

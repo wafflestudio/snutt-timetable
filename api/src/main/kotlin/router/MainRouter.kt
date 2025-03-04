@@ -90,7 +90,7 @@ class MainRouter(
                 POST("/login/kakao", authHandler::loginKakao)
                 POST("/login_apple", authHandler::loginAppleLegacy)
                 POST("/login/apple", authHandler::loginApple)
-                POST("/logout", authHandler::logout)
+                POST("/logout", userHandler::logout)
                 POST("/password/reset/email/check", authHandler::getMaskedEmail)
                 POST("/password/reset/email/send", authHandler::sendResetPasswordCode)
                 POST("/password/reset/verification/code", authHandler::verifyResetPasswordCode)

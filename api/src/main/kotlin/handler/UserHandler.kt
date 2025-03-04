@@ -8,6 +8,7 @@ import com.wafflestudio.snutt.users.data.User
 import com.wafflestudio.snutt.users.dto.AuthProvidersCheckDto
 import com.wafflestudio.snutt.users.dto.EmailVerificationResultDto
 import com.wafflestudio.snutt.users.dto.LocalLoginRequest
+import com.wafflestudio.snutt.users.dto.LogoutRequest
 import com.wafflestudio.snutt.users.dto.PasswordChangeRequest
 import com.wafflestudio.snutt.users.dto.SendEmailRequest
 import com.wafflestudio.snutt.users.dto.SocialLoginRequest
@@ -21,6 +22,8 @@ import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.awaitBody
+import org.springframework.web.reactive.function.server.awaitBodyOrNull
+import org.springframework.web.server.ServerWebInputException
 
 @Component
 class UserHandler(
@@ -172,6 +175,15 @@ class UserHandler(
             val user = req.getContext().user!!
             val body = req.awaitBody<PasswordChangeRequest>()
             userService.changePassword(user, body)
+        }
+
+    suspend fun logout(req: ServerRequest): ServerResponse =
+        handle(req) {
+            val userId = req.userId
+            val logoutRequest: LogoutRequest = req.awaitBodyOrNull() ?: throw ServerWebInputException("Invalid body")
+            userService.logout(userId, logoutRequest)
+
+            OkResponse()
         }
 
     private fun buildUserDto(user: User) =
